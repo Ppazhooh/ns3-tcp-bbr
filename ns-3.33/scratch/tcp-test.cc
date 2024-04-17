@@ -34,7 +34,7 @@ using namespace std;
 
 NS_LOG_COMPONENT_DEFINE ("TcpTest");
 static const double startTime=0;
-static const double simDuration= 300.0;
+static const double simDuration= 20.0;
 #define DEFAULT_PACKET_SIZE 1500
 static NodeContainer BuildExampleTopo (uint32_t bps,
                                        uint32_t msDelay,
@@ -80,16 +80,34 @@ int main(int argc, char *argv[])
     LogComponentEnable("TcpTest", LOG_LEVEL_ALL);
     LogComponentEnable("TcpClient", LOG_LEVEL_ALL);
     LogComponentEnable("TcpBbr", LOG_LEVEL_ALL);
-    std::string cc("bbr2");
+    std::string cc("copa");
+    std::string background_cc("cubic");
     std::string folder_name("default");
+    uint32_t copa_flow_nums = 3;
+    uint32_t cubic_flow_nums = 3;
+
+    uint32_t link_bw=6000000;
+    uint32_t link_owd=50;
+    uint32_t q_delay=200;
+    double delay_par = 0.05;
+
     CommandLine cmd;
     cmd.AddValue ("cc", "congestion algorithm",cc);
     cmd.AddValue ("folder", "folder name to collect data", folder_name);
+    cmd.AddValue ("copa_flow_nums", "flow nums", copa_flow_nums);
+    cmd.AddValue ("cubic_flow_nums", "flow nums", cubic_flow_nums);
+    cmd.AddValue ("link_bw", "link bandwidth", link_bw);
+    cmd.AddValue ("link_owd", "link one way delay", link_owd);
+    cmd.AddValue ("q_delay", "queue delay", q_delay);
+    cmd.AddValue ("delay_par", "delay par", delay_par);
+
     cmd.Parse (argc, argv);
     uint32_t kMaxmiumSegmentSize=1400;
     Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue(200*kMaxmiumSegmentSize));
     Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue(200*kMaxmiumSegmentSize));
     Config::SetDefault("ns3::TcpSocket::SegmentSize",UintegerValue(kMaxmiumSegmentSize));
+    
+
     if(0==cc.compare("reno")||0==cc.compare("bic")||0==cc.compare("cubic")||
       0==cc.compare("bbr")||0==cc.compare("copa")){}
     else{
@@ -105,9 +123,9 @@ int main(int argc, char *argv[])
         TcpBbrDebug::SetTraceFolder(trace_folder.c_str());
         TcpTracer::SetTraceFolder(trace_folder.c_str());
     }
-    uint32_t link_bw=6000000;
-    uint32_t link_owd=50;
-    uint32_t q_delay=200;
+
+    
+
     NodeContainer topo;
     topo=BuildExampleTopo(link_bw,link_owd,q_delay);
     Ptr<Node> h1=topo.Get(0);
@@ -132,28 +150,25 @@ int main(int argc, char *argv[])
     }
 
     uint64_t totalTxBytes = 40000*1500;
-    {
-        Ptr<TcpClient>  client= CreateObject<TcpClient> (totalTxBytes,TcpClient::E_TRACE_RTT|TcpClient::E_TRACE_INFLIGHT|TcpClient::E_TRACE_RATE);
+
+    for (uint32_t i = 0; i < copa_flow_nums; i++) {
+        
+        Ptr<TcpClient> client = CreateObject<TcpClient> (totalTxBytes, TcpClient::E_TRACE_RTT | TcpClient::E_TRACE_INFLIGHT | TcpClient::E_TRACE_RATE);
         h1->AddApplication(client);
         client->ConfigurePeer(tcp_sink_addr);
-        client->SetCongestionAlgo(cc);
-        client->SetStartTime (Seconds (startTime));
+        client->SetCongestionAlgo(cc, delay_par);
+       
+        client->SetStartTime (Seconds (startTime+5)); // Start times staggered by 10 seconds
         client->SetStopTime (Seconds (simDuration));
     }
-    {
-        Ptr<TcpClient>  client= CreateObject<TcpClient> (totalTxBytes,TcpClient::E_TRACE_RTT|TcpClient::E_TRACE_INFLIGHT|TcpClient::E_TRACE_RATE);
+
+    for (uint32_t i = 0; i < cubic_flow_nums; i++) {
+        
+        Ptr<TcpClient> client = CreateObject<TcpClient> (totalTxBytes, TcpClient::E_TRACE_RTT | TcpClient::E_TRACE_INFLIGHT | TcpClient::E_TRACE_RATE);
         h1->AddApplication(client);
         client->ConfigurePeer(tcp_sink_addr);
-        client->SetCongestionAlgo(cc);
-        client->SetStartTime (Seconds (startTime+20));
-        client->SetStopTime (Seconds (simDuration));
-    }
-    {
-        Ptr<TcpClient>  client= CreateObject<TcpClient> (totalTxBytes,TcpClient::E_TRACE_RTT|TcpClient::E_TRACE_INFLIGHT|TcpClient::E_TRACE_RATE);
-        h1->AddApplication(client);
-        client->ConfigurePeer(tcp_sink_addr);
-        client->SetCongestionAlgo(cc);
-        client->SetStartTime (Seconds (startTime+50));
+        client->SetCongestionAlgo(background_cc, delay_par);
+        client->SetStartTime (Seconds (startTime)); 
         client->SetStopTime (Seconds (simDuration));
     }
     

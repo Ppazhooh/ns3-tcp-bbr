@@ -56,7 +56,7 @@ namespace{
         return value;
     }
 }
-TypeId TcpCopa::GetTypeId (void){
+TypeId TcpCopa::GetTypeId (){
     static TypeId tid = TypeId ("ns3::TcpCopa")
     .SetParent<TcpCongestionOps> ()
     .AddConstructor<TcpCopa> ()
@@ -96,6 +96,11 @@ m_deltaParam(sock.m_deltaParam){
 TcpCopa::~TcpCopa(){}
 std::string TcpCopa::GetName () const{
     return "TcpCopa";
+}
+
+void TcpCopa::SetDelayParameter (double deltaParam) {
+    m_deltaParam = deltaParam;
+    std::cout<< "Set delay parameter to " << m_deltaParam << std::endl;
 }
 void TcpCopa::Init (Ptr<TcpSocketState> tcb){
     NS_ASSERT_MSG(tcb->m_pacing,"Enable pacing for Copa");
@@ -137,6 +142,7 @@ void TcpCopa::CongControl (Ptr<TcpSocketState> tcb,const TcpRateOps::TcpRateConn
     uint64_t delay_us;
     uint32_t packet_size=1500;
     uint32_t cwnd_bytes=tcb->m_cWnd;
+    // print the value of m_deltaParam
     if(m_useRttStanding){
         delay_us=rttStanding.GetMicroSeconds()-rtt_min.GetMicroSeconds();
     }else{
@@ -191,6 +197,7 @@ void TcpCopa::CongControl (Ptr<TcpSocketState> tcb,const TcpRateOps::TcpRateConn
             if(acked_packets){
                 addition=(acked_packets*mss*mss*m_velocityState.velocity)/(m_deltaParam*cwnd_bytes);
             }
+
             uint32_t new_cwnd=AddAndCheckOverflow(cwnd_bytes,addition,174);
             m_ackBytesRound=0;
             tcb->m_cWnd=new_cwnd;

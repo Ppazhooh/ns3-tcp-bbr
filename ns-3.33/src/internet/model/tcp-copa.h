@@ -59,6 +59,7 @@ public:
     virtual void CongControl (Ptr<TcpSocketState> tcb,const TcpRateOps::TcpRateConnection &rc,
                             const TcpRateOps::TcpRateSample &rs);
     virtual Ptr<TcpCongestionOps> Fork ();
+    void SetDelayParameter(double deltaParam);
 private:
     struct VelocityState {
         enum Direction {

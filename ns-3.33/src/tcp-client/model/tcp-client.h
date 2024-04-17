@@ -41,7 +41,8 @@ public:
     static void SetSegmentSize(uint32_t mss);
     static void SetRateCountGap(Time gap);
     void ConfigurePeer(Address addr);
-    void SetCongestionAlgo(std::string &algo);
+    void SetCongestionAlgo(std::string &algo, double delay_param);
+    double delay_parameter=0.0;
 private:
     Ipv4Address GetIpv4Address();
     virtual void StartApplication (void);

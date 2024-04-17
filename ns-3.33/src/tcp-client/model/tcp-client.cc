@@ -43,8 +43,9 @@ void TcpClient::SetSegmentSize(uint32_t mss){
 void TcpClient::SetRateCountGap(Time gap){
     kRateCountGap=gap;
 }
-void TcpClient::SetCongestionAlgo(std::string &algo){
+void TcpClient::SetCongestionAlgo(std::string &algo, double delay_parameter){
     m_algo=algo;
+    this->delay_parameter=delay_parameter;
 }
 void TcpClient::ConfigureCongstionAlgo(){
     TypeId id;
@@ -77,6 +78,11 @@ void TcpClient::ConfigureCongstionAlgo(){
     TcpSocketBase *base=static_cast<TcpSocketBase*>(PeekPointer(m_socket));
     if(0==m_algo.compare ("bbr")||0==m_algo.compare ("copa")||0==m_algo.compare ("copa2")){
         base->SetPacingStatus(true);
+    }
+    if (0==m_algo.compare ("copa")){
+        Ptr<TcpCopa> copa=CreateObject<TcpCopa>();
+        algo=copa;
+        copa->SetDelayParameter(this->delay_parameter);
     }
     base->SetCongestionControlAlgorithm (algo);
 }
